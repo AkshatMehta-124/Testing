@@ -269,61 +269,108 @@ export const injectGroupAdminModal = () => {
     });
 
     document.getElementById('btn-delete-group').addEventListener('click', async () => {
-        const operationRoomId = window.appState?.activeChatId;
-        if (!operationRoomId) return;
+    const operationRoomId = window.appState?.activeChatId;
+    if (!operationRoomId) return;
 
-        if (confirm("WARNING: This will permanently delete this group and all messages. Proceed?")) {
-            try {
-                // Fresh authorization check (Bug 8)
-                const groupDoc = await getDoc(doc(db, "chats", operationRoomId));
-                if (!groupDoc.exists()) {
-                    alert("Group does not exist.");
-                    return;
-                }
-                const data = groupDoc.data();
-                if (data.type !== 'group') {
-                    alert("This is not a group.");
-                    return;
-                }
-                const curId = currentUser?.id || currentUser?.uid;
-                const isCurrentOwner = currentUser?.isOwner || String(currentUser?.email || '').toLowerCase().trim() === 'akshat124.am12@gmail.com';
-                const isParticipant = Array.isArray(data.participants) && data.participants.includes(curId);
-                const isAdmin = Array.isArray(data.admins) && data.admins.includes(curId);
+    if (!confirm("WARNING: This will permanently delete this group and all messages. Proceed?")) {
+        return;
+    }
 
-                if (!isParticipant && !isCurrentOwner) {
-                    alert("You are not a participant of this group.");
-                    return;
-                }
-                if (!isCurrentOwner && !isAdmin) {
-                    alert("Only the Owner or group Admins can delete the group.");
-                    return;
-                }
+    try {
+        // Fresh authorization check
+        const groupDoc = await getDoc(doc(db, "chats", operationRoomId));
 
-                const msgsSnap = await getDocs(collection(db, `chats/${operationRoomId}/messages`));
-                const docsArray = msgsSnap.docs;
-                for (let i = 0; i < docsArray.length; i += 400) {
-                    const chunk = docsArray.slice(i, i + 400);
-                    const batch = writeBatch(db);
-                    chunk.forEach(d => batch.delete(d.ref));
-                    await batch.commit();
-                }
-                await deleteDoc(doc(db, "chats", operationRoomId));
-                const modal = document.getElementById('group-admin-modal');
-                if (modal) modal.style.display = 'none';
-                
-                if (window.appState && window.appState.activeChatId === operationRoomId) {
-                    window.appState.activeChatId = null;
-                    document.getElementById('main-layout')?.classList.remove('mobile-chat-active');
-                    if (window.leaveChatRoom) window.leaveChatRoom();
-                } else {
-                    window.location.reload(); 
-                }
-            } catch(e) { 
-                console.error("Delete group error:", e);
-                alert("Insufficient Permissions to delete group: " + (e.message || "Failed")); 
-            }
+        // User may have switched rooms while this request was running.
+        if (window.appState?.activeChatId !== operationRoomId) return;
+
+        if (!groupDoc.exists()) {
+            alert("Group does not exist.");
+            return;
         }
-    });
+
+        const data = groupDoc.data();
+
+        if (data.type !== 'group') {
+            alert("This is not a group.");
+            return;
+        }
+
+        const curId = currentUser?.id || currentUser?.uid;
+        const isCurrentOwner =
+            currentUser?.isOwner ||
+            String(currentUser?.email || '').toLowerCase().trim() === ownerEmail;
+
+        const isParticipant =
+            Array.isArray(data.participants) &&
+            data.participants.includes(curId);
+
+        const isAdmin =
+            Array.isArray(data.admins) &&
+            data.admins.includes(curId);
+
+        if (!isParticipant && !isCurrentOwner) {
+            alert("You are not a participant of this group.");
+            return;
+        }
+
+        if (!isCurrentOwner && !isAdmin) {
+            alert("Only the Owner or group Admins can delete the group.");
+            return;
+        }
+
+        const msgsSnap = await getDocs(
+            collection(db, `chats/${operationRoomId}/messages`)
+        );
+
+        if (window.appState?.activeChatId !== operationRoomId) return;
+
+        const docsArray = msgsSnap.docs;
+        let deletedMessageCount = 0;
+
+        for (let i = 0; i < docsArray.length; i += 400) {
+            if (window.appState?.activeChatId !== operationRoomId) return;
+
+            const chunk = docsArray.slice(i, i + 400);
+            const batch = writeBatch(db);
+
+            chunk.forEach(d => batch.delete(d.ref));
+
+            await batch.commit();
+            deletedMessageCount += chunk.length;
+
+            if (window.appState?.activeChatId !== operationRoomId) return;
+        }
+
+        if (window.appState?.activeChatId !== operationRoomId) return;
+
+        await deleteDoc(doc(db, "chats", operationRoomId));
+
+        if (window.appState?.activeChatId !== operationRoomId) return;
+
+        const modal = document.getElementById('group-admin-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+
+        window.appState.activeChatId = null;
+        document.getElementById('main-layout')?.classList.remove('mobile-chat-active');
+
+        if (window.leaveChatRoom) {
+            window.leaveChatRoom();
+        }
+
+    } catch (e) {
+        console.error("Delete group error:", e);
+
+        // Only show room-specific error UI if the original room is still active.
+        if (window.appState?.activeChatId === operationRoomId) {
+            alert(
+                "Failed to delete group: " +
+                (e.message || "Check database permissions.")
+            );
+        }
+    }
+});
 };
 
 export const populateGroupManagement = async (participants, admins) => {
