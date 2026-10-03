@@ -531,7 +531,6 @@ if (badgeHTML) {
     temp.innerHTML = badgeHTML;
     if (temp.firstElementChild) item.appendChild(temp.firstElementChild);
 }
-                item.innerHTML = `<div class="global-icon-box"><span class="material-symbols-rounded">${room.icon}</span></div><div class="user-info"><h4 style="${nameStyle}; display:flex; align-items:center;">${safeRoomName}${ownerBadge}</h4><p>Tap to view messages</p></div>${badgeHTML}`;
             }
 
             item.addEventListener('click', () => {
