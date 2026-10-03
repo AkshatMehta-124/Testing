@@ -417,13 +417,15 @@ if (window.appState?.activeChatId !== operationRoomId) return;
         delMe.onclick = async () => {
             const operationRoomId = activeChatId;
             try {
-                await updateDoc(doc(db, "chats", operationRoomId), {
-                    [`deletedFor_${curId}`]: true,
-                    [`clearedAt_${curId}`]: Date.now(),
-                    [`readReceipts.${curId}`]: Date.now()
-                });
-                
-                const delModal = document.getElementById('deleteChatModal');
+            await updateDoc(doc(db, "chats", operationRoomId), {
+    [`deletedFor_${curId}`]: true,
+    [`clearedAt_${curId}`]: Date.now(),
+    [`readReceipts.${curId}`]: Date.now()
+});
+
+if (window.appState?.activeChatId !== operationRoomId) return;
+
+const delModal = document.getElementById('deleteChatModal');
                 if (delModal) delModal.style.display = 'none';
 
                 if (window.appState && window.appState.activeChatId === operationRoomId) {
