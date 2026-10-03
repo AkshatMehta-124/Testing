@@ -6,6 +6,8 @@ import { initGlobalSettings } from './advancedEngine.js';
 import { initGroupEngine, validateGroupName, userProfileCache, getCachedUserProfile } from './groupEngine.js';
 import { initMediaEngine } from './mediaEngine.js';
 
+
+
 export const appState = { activeChatId: null, activeTab: 'all', isMobileChatOpen: false };
 window.appState = appState;
 window.currentUserAuth = currentUser;
@@ -26,6 +28,26 @@ export const roomsInfo = {
 
 export let dynamicRooms = {}; 
 window.getAvailableRooms = () => { return { ...roomsInfo, ...dynamicRooms }; }; 
+
+const getSafeImageSource = (rawUrl) => {
+    const value = String(rawUrl || '').trim();
+
+    if (/^https?:\/\/[^\s"'<>\\]+$/i.test(value)) {
+        return value;
+    }
+
+    if (/^data:image\/(?:jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(value)) {
+        return value;
+    }
+
+    return '';
+};
+
+const getFallbackAvatar = (name) => {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        String(name || 'User')
+    )}&background=00a884&color=fff`;
+};
 
 const style = document.createElement('style');
 style.innerHTML = `#rail-calls, #btn-start-audio-call, #btn-start-video-call { display: none !important; opacity: 0 !important; pointer-events: none !important; width: 0 !important; height: 0 !important; }`;
@@ -285,7 +307,8 @@ const fetchNetworkUsers = async () => {
             
             if (targetUid === myUid || !rawName) return; 
             
-            const pic = u.customProfilePic || u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(rawName)}&background=00a884&color=fff`;
+const rawPic = u.customProfilePic || u.photoURL || '';
+const pic = getSafeImageSource(rawPic) || getFallbackAvatar(rawName);
             userProfileCache.set(targetUid, { ...u, displayName: rawName, pic, _cachedAt: Date.now() });
             allNetworkUsers.set(targetUid, {
                 uid: targetUid, name: rawName, email: safeEmail, pic
@@ -320,13 +343,26 @@ const fetchNetworkUsers = async () => {
             const isOwnerTag = user.email === 'akshat124.am12@gmail.com' ? ' <span style="color:var(--primary); font-size:11px; font-weight:700; margin-left: 5px;">(Owner)</span>' : '';
 
             const safeUserName = (user.name || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-            item.innerHTML = `
-                <img src="${user.pic}" style="width:48px; height:48px; border-radius:50%; object-fit:cover;">
-                <div class="user-info">
-                    <h4 style="display: flex; align-items: center;">${safeUserName}${isOwnerTag}</h4>
-                    <p style="font-size:12px; color: var(--text-muted);">Tap to start private chat</p>
-                </div>
-            `;
+           const avatar = document.createElement('img');
+avatar.src = getSafeImageSource(user.pic) || getFallbackAvatar(user.name);
+avatar.alt = '';
+avatar.style.cssText = 'width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;';
+
+const userInfo = document.createElement('div');
+userInfo.className = 'user-info';
+
+const nameEl = document.createElement('h4');
+nameEl.style.cssText = 'display:flex;align-items:center;';
+nameEl.innerHTML = `${safeUserName}${isOwnerTag}`;
+
+const descEl = document.createElement('p');
+descEl.style.cssText = 'font-size:12px;color:var(--text-muted);';
+descEl.textContent = 'Tap to start private chat';
+
+userInfo.appendChild(nameEl);
+userInfo.appendChild(descEl);
+
+item.replaceChildren(avatar, userInfo);
 
             item.addEventListener('click', async () => {
                 const isCurrentOwner = currentUser?.isOwner || String(currentUser?.email || '').toLowerCase().trim() === 'akshat124.am12@gmail.com';
@@ -442,9 +478,59 @@ export const renderSidebarList = () => {
             const ownerBadge = room.isTargetOwner ? ' <span style="color:var(--primary); font-size:10px; font-weight:700; margin-left:5px;">(Owner)</span>' : '';
 
             const safeRoomName = (room.name || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-            if (room.isImage) {
-                item.innerHTML = `<img src="${room.icon}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"><div class="user-info"><h4 style="${nameStyle}; display:flex; align-items:center;">${safeRoomName}${ownerBadge}</h4><p>${room.type === 'dm' ? 'Direct Message' : 'Group Chat'}</p></div>${badgeHTML}`;
-            } else {
+          const safeRoomImage = getSafeImageSource(room.icon);
+
+if (room.isImage && safeRoomImage) {
+    const avatar = document.createElement('img');
+    avatar.src = safeRoomImage;
+    avatar.alt = '';
+    avatar.style.cssText = 'width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;';
+
+    const userInfo = document.createElement('div');
+    userInfo.className = 'user-info';
+
+    const nameEl = document.createElement('h4');
+    nameEl.style.cssText = `${nameStyle};display:flex;align-items:center;`;
+    nameEl.innerHTML = `${safeRoomName}${ownerBadge}`;
+
+    const descEl = document.createElement('p');
+    descEl.textContent = room.type === 'dm' ? 'Direct Message' : 'Group Chat';
+
+    userInfo.appendChild(nameEl);
+    userInfo.appendChild(descEl);
+
+    item.replaceChildren(avatar, userInfo);
+} else {
+    const iconBox = document.createElement('div');
+    iconBox.className = 'global-icon-box';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'material-symbols-rounded';
+    iconSpan.textContent = room.icon || (room.type === 'group' ? 'groups' : 'person');
+
+    iconBox.appendChild(iconSpan);
+
+    const userInfo = document.createElement('div');
+    userInfo.className = 'user-info';
+
+    const nameEl = document.createElement('h4');
+    nameEl.style.cssText = `${nameStyle};display:flex;align-items:center;`;
+    nameEl.innerHTML = `${safeRoomName}${ownerBadge}`;
+
+    const descEl = document.createElement('p');
+    descEl.textContent = 'Tap to view messages';
+
+    userInfo.appendChild(nameEl);
+    userInfo.appendChild(descEl);
+
+    item.replaceChildren(iconBox, userInfo);
+}
+
+if (badgeHTML) {
+    const temp = document.createElement('div');
+    temp.innerHTML = badgeHTML;
+    if (temp.firstElementChild) item.appendChild(temp.firstElementChild);
+}
                 item.innerHTML = `<div class="global-icon-box"><span class="material-symbols-rounded">${room.icon}</span></div><div class="user-info"><h4 style="${nameStyle}; display:flex; align-items:center;">${safeRoomName}${ownerBadge}</h4><p>Tap to view messages</p></div>${badgeHTML}`;
             }
 
