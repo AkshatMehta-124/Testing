@@ -142,7 +142,10 @@ export const initMediaEngine = () => {
                 }
                 
                 // Clear the input after processing
-                fileInput.value = '';
+// Clear the input only if the user is still in the original room
+if (window.appState?.activeChatId === operationRoomId) {
+    fileInput.value = '';
+}
             };
             reader.readAsDataURL(file); 
         });
