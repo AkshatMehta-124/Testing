@@ -249,11 +249,14 @@ export function initChatOptions(currentUser, activeChatId, activeChatData) {
             const operationRoomId = activeChatId;
             if (!confirm("Are you sure you want to leave this group?")) return;
             try {
-                await updateDoc(doc(db, "chats", operationRoomId), {
-                    participants: arrayRemove(curId),
-                    admins: arrayRemove(curId)
-                });
-                if (window.appState && window.appState.activeChatId === operationRoomId) {
+             await updateDoc(doc(db, "chats", operationRoomId), {
+    participants: arrayRemove(curId),
+    admins: arrayRemove(curId)
+});
+
+if (window.appState?.activeChatId !== operationRoomId) return;
+
+if (window.appState && window.appState.activeChatId === operationRoomId) {
                     window.appState.activeChatId = null;
                     document.getElementById('main-layout')?.classList.remove('mobile-chat-active');
                     if (window.leaveChatRoom) window.leaveChatRoom();
@@ -271,8 +274,8 @@ export function initChatOptions(currentUser, activeChatId, activeChatData) {
             const operationRoomId = activeChatId;
             try {
                 const q = query(collection(db, `chats/${operationRoomId}/messages`), orderBy("timestamp", "asc"));
-                const snapshot = await getDocs(q);
-                if (window.appState?.activeChatId && window.appState.activeChatId !== operationRoomId) return;
+               const snapshot = await getDocs(q);
+if (window.appState?.activeChatId !== operationRoomId) return;
 
                 const clearTimestamp = activeChatData ? (activeChatData[`clearedAt_${curId}`] || 0) : 0;
                 const clearMs = window.getTimestampMillis ? window.getTimestampMillis(clearTimestamp) : (typeof clearTimestamp === 'number' ? clearTimestamp : (typeof clearTimestamp?.toMillis === 'function' ? clearTimestamp.toMillis() : (typeof clearTimestamp?.seconds === 'number' ? clearTimestamp.seconds * 1000 : 0)));
@@ -317,8 +320,7 @@ export function initChatOptions(currentUser, activeChatId, activeChatData) {
             try {
                 const q = query(collection(db, `chats/${operationRoomId}/messages`), orderBy("timestamp", "desc"), limit(10));
                 const snap = await getDocs(q);
-                if (window.appState?.activeChatId && window.appState.activeChatId !== operationRoomId) return;
-
+if (window.appState?.activeChatId !== operationRoomId) return;
                 let historyStr = "";
                 snap.forEach(d => {
                     const msg = d.data();
@@ -336,6 +338,7 @@ export function initChatOptions(currentUser, activeChatId, activeChatData) {
                     date: Date.now(),
                     status: 'Unresolved'
                 });
+                if (window.appState?.activeChatId !== operationRoomId) return;
                 alert("Report submitted successfully.");
                 if (optionsMenu) optionsMenu.style.display = 'none';
                 showBackdrop(false);
@@ -345,6 +348,7 @@ export function initChatOptions(currentUser, activeChatId, activeChatData) {
             }
         };
     }
+    
 
     if (blockBtn) {
         blockBtn.onclick = async () => {
