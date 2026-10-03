@@ -82,11 +82,14 @@ export const initMediaEngine = () => {
                             return;
                         }
 
-                        try {
-                            if (window.appState?.activeChatId === operationRoomId) {
-                                await updateReadReceipt(operationRoomId, curId);
-                            }
-                            const targetUpdate = {};
+                      try {
+    if (window.appState?.activeChatId !== operationRoomId) return;
+
+    await updateReadReceipt(operationRoomId, curId);
+
+    if (window.appState?.activeChatId !== operationRoomId) return;
+
+    const targetUpdate = {};
                             const availableRooms = window.getAvailableRooms ? window.getAvailableRooms() : {};
                             const rData = availableRooms[operationRoomId];
                             if (rData && rData.type === 'dm') {
@@ -119,10 +122,13 @@ export const initMediaEngine = () => {
                     }
 
                     try {
-                        if (window.appState?.activeChatId === operationRoomId) {
-                            await updateReadReceipt(operationRoomId, curId);
-                        }
-                        const targetUpdate = {};
+    if (window.appState?.activeChatId !== operationRoomId) return;
+
+    await updateReadReceipt(operationRoomId, curId);
+
+    if (window.appState?.activeChatId !== operationRoomId) return;
+
+    const targetUpdate = {};
                         const availableRooms = window.getAvailableRooms ? window.getAvailableRooms() : {};
                         const rData = availableRooms[operationRoomId];
                         if (rData && rData.type === 'dm') {
