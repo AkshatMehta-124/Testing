@@ -582,13 +582,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const curId = currentUser.id || currentUser.uid;
             if (curId) {
                 getDoc(doc(db, "users", curId)).then(uDoc => {
-                    if (uDoc.exists() && uDoc.data().wallpaper) {
-                        const mainPanel = document.querySelector('.chat-main');
-                        if (mainPanel) {
-                            mainPanel.style.backgroundImage = `url(${uDoc.data().wallpaper})`;
-                            mainPanel.style.backgroundSize = "cover";
-                        }
-                    }
+                   if (uDoc.exists() && uDoc.data().wallpaper) {
+    const mainPanel = document.querySelector('.chat-main');
+    const wallpaper = String(uDoc.data().wallpaper || '').trim();
+
+    const validWallpaper =
+        /^https?:\/\/[^\s"'<>\\]+$/i.test(wallpaper) ||
+        /^data:image\/(?:jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(wallpaper);
+
+    if (mainPanel && validWallpaper) {
+        const cssSafeWallpaper = wallpaper
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"');
+
+        mainPanel.style.backgroundImage = `url("${cssSafeWallpaper}")`;
+        mainPanel.style.backgroundSize = "cover";
+    }
+}
                 }).catch(e => console.error(e));
             }
         }
