@@ -4,6 +4,41 @@ import { encryptMessage, decryptMessage } from './siteCipher.js';
 import { initChatOptions } from './advancedEngine.js';
 import { injectGroupAdminModal, populateGroupManagement, userProfileCache, getCachedUserProfile } from './groupEngine.js';
 
+const isSafeImageSource = (rawUrl) => {
+    const value = String(rawUrl || '').trim();
+
+    return (
+        /^https?:\/\/[^\s"'<>\\]+$/i.test(value) ||
+        /^data:image\/(?:jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(value)
+    );
+};
+
+const setSafeAvatar = (container, rawUrl, fallbackIcon = 'person') => {
+    if (!container) return;
+
+    const value = String(rawUrl || '').trim();
+
+    if (isSafeImageSource(value)) {
+        const img = document.createElement('img');
+        img.src = value;
+        img.alt = '';
+        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+
+        container.style.background = 'transparent';
+        container.replaceChildren(img);
+        return true;
+    }
+
+    container.style.background = '#dfe5e7';
+
+    const span = document.createElement('span');
+    span.className = 'material-symbols-rounded';
+    span.textContent = fallbackIcon;
+
+    container.replaceChildren(span);
+    return false;
+};
+
 let unsubscribeListener = null;
 let roomStateListener = null;
 let userBlockedListener = null;
@@ -35,6 +70,7 @@ export const getTimestampMillis = (ts) => {
     }
     return 0;
 };
+
 window.getTimestampMillis = getTimestampMillis;
 
 const parseWhatsAppFormatting = (text) => {
@@ -143,16 +179,13 @@ export const switchChatRoom = (roomId, passedName, passedIcon, passedType, passe
     if (optBtn) optBtn.style.display = 'block';
     
     if (titleEl && passedName) titleEl.innerText = passedName;
-    if (iconBox && passedIcon) {
-        if (passedIcon.startsWith('http') || passedIcon.startsWith('data:image')) {
-            iconBox.style.background = 'transparent';
-            iconBox.innerHTML = `<img src="${passedIcon}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-        } else {
-            iconBox.style.background = '#dfe5e7';
-            iconBox.innerHTML = `<span class="material-symbols-rounded">${passedType === 'group' ? 'groups' : 'person'}</span>`;
-        }
-    }
-
+   if (iconBox) {
+    setSafeAvatar(
+        iconBox,
+        passedIcon,
+        passedType === 'group' ? 'groups' : 'person'
+    );
+}
     const statusEl = document.getElementById('active-room-status');
     if (statusEl) {
         if (passedType === 'dm') {
@@ -222,11 +255,10 @@ export const updateBlockedStateUI = async () => {
                     if (activeTitle && currentRoomId === capturedRoomId) {
                         activeTitle.innerText = displayName;
                     }
-                    const iconBox = document.getElementById('active-room-icon-box');
-                    if (iconBox && pic && currentRoomId === capturedRoomId) {
-                        iconBox.style.background = 'transparent';
-                        iconBox.innerHTML = `<img src="${pic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-                    }
+                  const iconBox = document.getElementById('active-room-icon-box');
+if (iconBox && currentRoomId === capturedRoomId) {
+    setSafeAvatar(iconBox, pic, 'person');
+}
                 }
             } catch(e) { console.error(e); alert("Action failed: " + (e.message || "Unknown error")); }
         }
@@ -651,10 +683,9 @@ const listenToRoomState = async (roomId) => {
 
                     if (iconBox) {
                         const dmPic = cachedProfile?.pic || cachedProfile?.customProfilePic || cachedProfile?.photoURL || currentRoomData.avatars?.[otherId];
-                        if (dmPic) {
-                            iconBox.style.background = 'transparent';
-                            iconBox.innerHTML = `<img src="${dmPic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-                        }
+                      if (dmPic) {
+    setSafeAvatar(iconBox, dmPic, 'person');
+}
                     }
 
                     const isStale = !cachedProfile || !cachedProfile._cachedAt || (Date.now() - cachedProfile._cachedAt > 60000);
@@ -662,11 +693,10 @@ const listenToRoomState = async (roomId) => {
                         getCachedUserProfile(otherId).then(p => {
                             if (p && p.displayName && currentRoomId === roomId) {
                                 titleEl.innerText = p.displayName;
-                                if (iconBox && (p.pic || p.customProfilePic || p.photoURL)) {
-                                    const newPic = p.pic || p.customProfilePic || p.photoURL;
-                                    iconBox.style.background = 'transparent';
-                                    iconBox.innerHTML = `<img src="${newPic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-                                }
+                              if (iconBox && (p.pic || p.customProfilePic || p.photoURL)) {
+    const newPic = p.pic || p.customProfilePic || p.photoURL;
+    setSafeAvatar(iconBox, newPic, 'person');
+}
                             }
                         }).catch(e => console.error(e));
                     }
