@@ -411,12 +411,29 @@ const renderMessagesUI = () => {
             const rawFileUrl = decryptMessage(msg.fileUrl);
             const rawFileName = msg.fileName ? decryptMessage(msg.fileName) : 'attachment';
             const safeFileName = String(rawFileName).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-            let safeFileUrl = '#';
-            const lw = rawFileUrl.toLowerCase().trim();
-            if (lw.startsWith('http://') || lw.startsWith('https://') || 
-                lw.startsWith('data:image/') || lw.startsWith('data:application/') || lw.startsWith('data:text/')) {
-                safeFileUrl = rawFileUrl.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-            }
+         let safeFileUrl = '#';
+const trimmedFileUrl = String(rawFileUrl || '').trim();
+const fileType = String(msg.fileType || '').toLowerCase();
+
+if (/^https?:\/\/\S+$/i.test(trimmedFileUrl)) {
+    safeFileUrl = trimmedFileUrl
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+} else {
+    const dataMatch = trimmedFileUrl.match(/^data:([^;,]+)[;,]/i);
+    const dataMime = dataMatch ? dataMatch[1].toLowerCase() : '';
+
+    const allowedDataUrl =
+        (fileType.startsWith('image/') && dataMime.startsWith('image/')) ||
+        (fileType === 'application/pdf' && dataMime === 'application/pdf') ||
+        (fileType.startsWith('text/') && dataMime.startsWith('text/'));
+
+    if (allowedDataUrl) {
+        safeFileUrl = trimmedFileUrl
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+}
 
             if (msg.fileType && msg.fileType.startsWith('image')) {
                 mediaAttachmentHTML = `
