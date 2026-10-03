@@ -240,8 +240,18 @@ export const injectGroupAdminModal = () => {
             updates.name = validation.name;
         }
 
-        if (urlIcon) updates.icon = urlIcon; 
-        else if (uploadedGroupIconBase64) updates.icon = uploadedGroupIconBase64;
+        if (urlIcon) {
+    const validHttpIcon = /^https?:\/\/[^\s"'<>\\]+$/i.test(urlIcon);
+    const validDataIcon = /^data:image\/(?:jpeg|jpg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(urlIcon);
+
+    if (!validHttpIcon && !validDataIcon) {
+        return alert("Invalid image URL. Use an HTTPS/HTTP image URL or upload an image.");
+    }
+
+    updates.icon = urlIcon;
+} else if (uploadedGroupIconBase64) {
+    updates.icon = uploadedGroupIconBase64;
+}
         if (newAdminId) updates.admins = [newAdminId]; 
         
         if (Object.keys(updates).length > 0) {
