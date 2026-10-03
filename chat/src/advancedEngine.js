@@ -500,11 +500,9 @@ const delModal = document.getElementById('deleteChatModal');
                         );
                     }
                 }
-            } finally {
+                      } finally {
                 delBoth.textContent = "Delete for Both";
             }
         };
-    }
-}
     }
 }
