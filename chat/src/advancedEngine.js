@@ -439,20 +439,71 @@ const delModal = document.getElementById('deleteChatModal');
 
     const delBoth = document.getElementById('btn-del-chat-both');
     if (delBoth) {
-        delBoth.onclick = async () => {
-            const operationRoomId = activeChatId;
-            if (!confirm("Permanently delete this chat and all messages for everyone?")) return;
-            delBoth.textContent = "Deleting...";
-            try {
-                const snap = await getDocs(collection(db, `chats/${operationRoomId}/messages`));
-                const docsArray = snap.docs;
-                for (let i = 0; i < docsArray.length; i += 400) {
-                    const chunk = docsArray.slice(i, i + 400);
-                    const batch = writeBatch(db);
-                    chunk.forEach(d => batch.delete(d.ref));
-                    await batch.commit();
-                }
-                await deleteDoc(doc(db, "chats", operationRoomId));
+       delBoth.onclick = async () => {
+    const operationRoomId = activeChatId;
+    if (!confirm("Permanently delete this chat and all messages for everyone?")) return;
+
+    delBoth.textContent = "Deleting...";
+    let deletedMessageCount = 0;
+
+    try {
+        const snap = await getDocs(
+            collection(db, `chats/${operationRoomId}/messages`)
+        );
+
+        if (window.appState?.activeChatId !== operationRoomId) return;
+
+        const docsArray = snap.docs;
+
+        for (let i = 0; i < docsArray.length; i += 400) {
+            if (window.appState?.activeChatId !== operationRoomId) return;
+
+            const chunk = docsArray.slice(i, i + 400);
+            const batch = writeBatch(db);
+
+            chunk.forEach(d => batch.delete(d.ref));
+
+            await batch.commit();
+            deletedMessageCount += chunk.length;
+
+            if (window.appState?.activeChatId !== operationRoomId) return;
+        }
+
+        if (window.appState?.activeChatId !== operationRoomId) return;
+
+        await deleteDoc(doc(db, "chats", operationRoomId));
+
+        if (window.appState?.activeChatId !== operationRoomId) return;
+
+        const delModal = document.getElementById('deleteChatModal');
+        if (delModal) delModal.style.display = 'none';
+
+        window.appState.activeChatId = null;
+        document.getElementById('main-layout')?.classList.remove('mobile-chat-active');
+
+        if (window.leaveChatRoom) {
+            window.leaveChatRoom();
+        }
+
+    } catch (e) {
+        console.error("Delete chat for everyone error:", e);
+
+        if (window.appState?.activeChatId === operationRoomId) {
+            if (deletedMessageCount > 0) {
+                alert(
+                    `Delete partially completed. ${deletedMessageCount} message(s) were deleted, but the operation did not finish.`
+                );
+            } else {
+                alert(
+                    "Failed to delete chat: " +
+                    (e.message || "Check database permissions.")
+                );
+            }
+        }
+    } finally {
+        delBoth.textContent = "Delete for Both";
+    }
+};
                 
                 const delModal = document.getElementById('deleteChatModal');
                 if (delModal) delModal.style.display = 'none';
