@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aksh Chat</title>
+    <link rel="icon" type="image/png" href="/chat-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <div id="app-root" class="app-root loading">
+        
+        <!-- Neutral loading overlay -->
+        <div id="loading-overlay" class="overlay flex-center">
+            <div class="text-center">
+                <div class="spinner"></div>
+                <p style="margin-top: 16px; color: var(--text-muted);">Loading Aksh Chat...</p>
+            </div>
+        </div>
+
+        <!-- Auth overlay (hidden by default until auth state is resolved) -->
+        <div id="auth-overlay" class="overlay flex-center hidden">
+            <div class="modal auth-modal text-center">
+                <img src="/chat-logo.png" alt="Aksh Chat" class="auth-logo">
+                <h2>Sign In Required</h2>
+                <p>You must be signed in with your Aksh Account to access Aksh Chat.</p>
+                <button id="btn-signin" class="btn btn-primary">Sign In with Google</button>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div id="main-layout" class="main-layout hidden">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="sidebar">
+                <div class="sidebar-header">
+                    <img src="/chat-logo.png" alt="Aksh Chat" class="brand-logo">
+                    <h2>Chats</h2>
+                    <div class="sidebar-actions">
+                        <button id="btn-new-chat" class="icon-btn" title="New Chat"><span class="material-symbols-rounded">chat_add_on</span></button>
+                        <button id="btn-new-group" class="icon-btn" title="New Group"><span class="material-symbols-rounded">group_add</span></button>
+                        <button id="btn-settings" class="icon-btn" title="Settings"><span class="material-symbols-rounded">settings</span></button>
+                    </div>
+                </div>
+                <div class="search-bar">
+                    <span class="material-symbols-rounded search-icon">search</span>
+                    <input type="text" id="search-input" placeholder="Search chats...">
+                </div>
+                <div id="chat-list" class="chat-list">
+                    <!-- Chat items injected here -->
+                </div>
+            </aside>
+
+            <!-- Chat Area -->
+            <main id="chat-area" class="chat-area empty">
+                <div class="empty-state">
+                    <img src="/chat-logo.png" alt="Aksh Chat" class="empty-logo">
+                    <h2>Aksh Chat</h2>
+                    <p>Select a chat or start a new conversation.</p>
+                </div>
+                
+                <div id="active-chat" class="active-chat hidden">
+                    <header class="chat-header">
+                        <button id="btn-mobile-back" class="icon-btn mobile-only"><span class="material-symbols-rounded">arrow_back</span></button>
+                        <img id="chat-header-avatar" src="" alt="" class="avatar">
+                        <div class="chat-header-info">
+                            <h3 id="chat-header-title">Chat Title</h3>
+                            <p id="chat-header-subtitle">Subtitle</p>
+                        </div>
+                        <div class="chat-header-actions">
+                            <button id="btn-chat-search" class="icon-btn"><span class="material-symbols-rounded">search</span></button>
+                            <button id="btn-chat-menu" class="icon-btn"><span class="material-symbols-rounded">more_vert</span></button>
+                        </div>
+                    </header>
+                    
+                    <div id="pin-container"></div>
+
+                    <div id="message-list" class="message-list">
+                        <!-- Messages injected here -->
+                    </div>
+
+                    <div id="selection-toolbar" class="selection-toolbar hidden">
+                        <span id="selection-count">0 selected</span>
+                        <div class="selection-actions">
+                            <button id="btn-bulk-forward" class="icon-btn" title="Forward"><span class="material-symbols-rounded">forward</span></button>
+                            <button id="btn-bulk-delete" class="icon-btn" title="Delete"><span class="material-symbols-rounded">delete</span></button>
+                            <button id="btn-cancel-selection" class="icon-btn" title="Cancel"><span class="material-symbols-rounded">close</span></button>
+                        </div>
+                    </div>
+
+                    <div id="composer" class="composer">
+                        <button id="btn-attach" class="icon-btn"><span class="material-symbols-rounded">attach_file</span></button>
+                        <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf,text/*,.doc,.docx,.csv">
+                        <div class="input-wrapper">
+                            <div id="reply-banner" class="reply-banner hidden">
+                                <span class="material-symbols-rounded">reply</span>
+                                <div class="reply-info">
+                                    <span id="reply-user" class="reply-user">User</span>
+                                    <span id="reply-text" class="reply-text">Message preview</span>
+                                </div>
+                                <button id="btn-cancel-reply" class="icon-btn small"><span class="material-symbols-rounded">close</span></button>
+                            </div>
+                            <textarea id="message-input" placeholder="Type a message" rows="1"></textarea>
+                        </div>
+                        <button id="btn-send" class="icon-btn primary"><span class="material-symbols-rounded">send</span></button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
